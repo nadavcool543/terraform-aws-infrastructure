@@ -1,7 +1,7 @@
 resource "kubernetes_ingress_v1" "argocd" {
   metadata {
     name      = "argocd-ingress"
-    namespace = var.argocd_namespace
+    namespace = "argocd"
     annotations = {
       "kubernetes.io/ingress.class"               = "nginx"
       "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"

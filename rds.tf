@@ -1,6 +1,6 @@
 # Security Group for RDS
 resource "aws_security_group" "rds" {
-  name        = "${var.project_name}-rds-sg"
+  name        = "terraform-drills-rds-sg"
   description = "Security group for RDS instance"
   vpc_id      = aws_vpc.main.id
 
@@ -12,49 +12,46 @@ resource "aws_security_group" "rds" {
     security_groups = [aws_security_group.ec2.id]
   }
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "${var.project_name} RDS Security Group"
-    }
-  )
+  tags = {
+    Name        = "RDS Security Group"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # RDS Instance
 resource "aws_db_instance" "main" {
-  identifier        = "${var.project_name}-rds"
+  identifier        = "terraform-drills-rds"
   engine            = "mysql"
   engine_version    = "8.0"
   instance_class    = "db.t3.micro"
   allocated_storage = 20
   
-  db_name  = replace(var.project_name, "-", "_")
+  db_name  = "terraform_drills"
   username = "admin"
   password = "password123!"  # In production, use secrets management!
 
   vpc_security_group_ids = [aws_security_group.rds.id]
   db_subnet_group_name   = aws_db_subnet_group.main.name
 
-  skip_final_snapshot = true  # For testing only, use false in production
+  skip_final_snapshot = true
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "${var.project_name} RDS Instance"
-    }
-  )
+  tags = {
+    Name        = "Main RDS Instance"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # DB Subnet Group - Use all private subnets
 resource "aws_db_subnet_group" "main" {
-  name       = "${var.project_name}-subnet-group"
-  subnet_ids = values(aws_subnet.private)[*].id  # Use all private subnets
+  name       = "terraform-drills-subnet-group"
+  subnet_ids = values(aws_subnet.private)[*].id
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "${var.project_name} DB Subnet Group"
-    }
-  )
+  tags = {
+    Name        = "DB Subnet Group"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 } 
 

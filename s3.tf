@@ -1,12 +1,11 @@
 resource "aws_s3_bucket" "my-bucket" {
-  bucket = var.s3_bucket_name
+  bucket = "nadav-bucket-24-11-98"
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Terraform Drill Bucket"
-    }
-  )
+  tags = {
+    Name        = "Terraform Drill Bucket"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 resource "aws_s3_bucket_ownership_controls" "my-bucket" {
@@ -26,6 +25,6 @@ resource "aws_s3_bucket_acl" "my-bucket" {
 resource "aws_s3_bucket_versioning" "my-bucket" {
   bucket = aws_s3_bucket.my-bucket.id
   versioning_configuration {
-    status = var.s3_versioning_enabled ? "Enabled" : "Disabled"
+    status = "Enabled"
   }
 }

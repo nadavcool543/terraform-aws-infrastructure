@@ -1,6 +1,6 @@
 # Security Group for ALB
 resource "aws_security_group" "alb" {
-  name        = "${var.project_name}-alb-sg"
+  name        = "terraform-drills-alb-sg"
   description = "Security group for ALB"
   vpc_id      = aws_vpc.main.id
 
@@ -18,33 +18,31 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "${var.project_name} ALB Security Group"
-    }
-  )
+  tags = {
+    Name        = "ALB Security Group"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # Application Load Balancer
 resource "aws_lb" "main" {
-  name               = "${var.project_name}-alb"
+  name               = "terraform-drills-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
   subnets            = values(aws_subnet.public)[*].id
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Main ALB"
-    }
-  )
+  tags = {
+    Name        = "Main ALB"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # Target Group
 resource "aws_lb_target_group" "main" {
-  name     = "${var.project_name}-tg"
+  name     = "terraform-drills-tg"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -59,12 +57,11 @@ resource "aws_lb_target_group" "main" {
     unhealthy_threshold = 2
   }
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Main Target Group"
-    }
-  )
+  tags = {
+    Name        = "Main Target Group"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # Listener

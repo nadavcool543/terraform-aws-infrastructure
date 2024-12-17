@@ -11,7 +11,7 @@ data "aws_ami" "amazon_linux_2023" {
 
 # Security Group for EC2
 resource "aws_security_group" "ec2" {
-  name        = "${var.project_name}-ec2-sg"
+  name        = "ec2-security-group"
   description = "Security group for EC2 instance"
   vpc_id      = aws_vpc.main.id
 
@@ -20,7 +20,7 @@ resource "aws_security_group" "ec2" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = var.ec2_ssh_allowed_cidr
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # Allow outbound traffic
@@ -39,27 +39,25 @@ resource "aws_security_group" "ec2" {
     security_groups = [aws_security_group.alb.id]  # Allow traffic from ALB security group
   }
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "${var.project_name} EC2 Security Group"
-    }
-  )
+  tags = {
+    Name        = "EC2 Security Group"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # EC2 Instance
 resource "aws_instance" "main" {
   ami           = data.aws_ami.amazon_linux_2023.id  
-  instance_type = var.ec2_instance_type
+  instance_type = "t2.micro"
   subnet_id     = values(aws_subnet.public)[0].id  # Gets the first public subnet
   
   vpc_security_group_ids = [aws_security_group.ec2.id]
   
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Main Instance"
-    }
-  )
+  tags = {
+    Name        = "Main Instance"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 } 
 

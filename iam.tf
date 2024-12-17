@@ -1,6 +1,6 @@
 # IAM Role for Lambda
 resource "aws_iam_role" "lambda_role" {
-  name = "${var.project_name}-lambda-secrets-role"
+  name = "terraform-drills-lambda-secrets-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -15,17 +15,16 @@ resource "aws_iam_role" "lambda_role" {
     ]
   })
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Lambda Secrets Role"
-    }
-  )
+  tags = {
+    Name        = "Lambda Secrets Role"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # IAM Policy for Secrets Manager access
 resource "aws_iam_policy" "secrets_policy" {
-  name = "${var.project_name}-lambda-secrets-policy"
+  name = "terraform-drills-lambda-secrets-policy"
 
   description = "Policy for Lambda to access Secrets Manager"
 
@@ -43,12 +42,11 @@ resource "aws_iam_policy" "secrets_policy" {
     ]
   })
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Lambda Secrets Policy"
-    }
-  )
+  tags = {
+    Name        = "Lambda Secrets Policy"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # Attach the policy to the role

@@ -20,30 +20,29 @@ EOF
 # Lambda Function
 resource "aws_lambda_function" "main" {
   filename         = data.archive_file.lambda_zip.output_path
-  function_name    = "${var.project_name}-lambda"
+  function_name    = "terraform-lambda"
   role            = aws_iam_role.lambda_role.arn
   handler         = "index.handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  runtime         = var.lambda_runtime
-  timeout         = var.lambda_timeout
+  runtime         = "nodejs18.x"
+  timeout         = 30
 
   environment {
     variables = {
-      Environment = var.environment
+      Environment = "Dev"
     }
   }
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Main Lambda Function"
-    }
-  )
+  tags = {
+    Name        = "Main Lambda Function"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # CloudWatch Log Group for Lambda
 resource "aws_cloudwatch_log_group" "lambda" {
   name              = "/aws/lambda/${aws_lambda_function.main.function_name}"
-  retention_in_days = var.log_retention_days
+  retention_in_days = 14
 }
 

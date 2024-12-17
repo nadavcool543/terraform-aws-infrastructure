@@ -1,6 +1,6 @@
 # CloudFront Origin Access Control
 resource "aws_cloudfront_origin_access_control" "s3_oac" {
-  name                              = "${var.project_name}-s3-oac"
+  name                              = "terraform-drills-s3-oac"
   description                       = "Origin Access Control for S3"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -42,7 +42,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   logging_config {
     include_cookies = false
     bucket         = aws_s3_bucket.my-bucket.bucket_regional_domain_name
-    prefix         = "${var.project_name}-${var.cloudfront_log_prefix}/"
+    prefix         = "terraform-drills-cloudfront-logs/"
   }
   
   # Required restrictions
@@ -57,12 +57,11 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     cloudfront_default_certificate = true
   }
   
-  price_class = var.cloudfront_price_class
+  price_class = "PriceClass_100"
   
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Main CloudFront Distribution"
-    }
-  )
+  tags = {
+    Name        = "Main CloudFront Distribution"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 } 

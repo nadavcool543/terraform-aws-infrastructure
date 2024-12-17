@@ -12,7 +12,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = var.terraform_role_arn
+    value = "arn:aws:iam::767397741479:role/TerraformRole"
   }
 
   set {
@@ -38,8 +38,8 @@ resource "helm_release" "nginx" {
   name             = "nginx"
   repository       = "https://kubernetes.github.io/ingress-nginx"
   chart            = "ingress-nginx"
-  version          = var.nginx_helm_version
-  namespace        = var.nginx_namespace
+  version          = "4.7.1"
+  namespace        = "nginx"
   create_namespace = true
 
   # Basic NGINX configuration
@@ -51,7 +51,7 @@ resource "helm_release" "nginx" {
   # Add identification tags
   set {
     name  = "controller.labels.Environment"
-    value = var.environment
+    value = "Dev"
   }
 
   # Configure health check endpoint
@@ -82,7 +82,7 @@ resource "kubernetes_ingress_v1" "nginx" {
       "alb.ingress.kubernetes.io/healthcheck-port" = "traffic-port"
       "alb.ingress.kubernetes.io/success-codes"    = "200-399"
       "alb.ingress.kubernetes.io/listen-ports"     = "[{\"HTTP\": 80}, {\"HTTPS\": 443}]"
-      "alb.ingress.kubernetes.io/certificate-arn"  = var.acm_certificate_arn
+      "alb.ingress.kubernetes.io/certificate-arn"  = "arn:aws:acm:us-east-1:767397741479:certificate/0654c958-3fbc-4214-b355-bb8cba5db57c"
       "alb.ingress.kubernetes.io/ssl-redirect"     = "443"
     }
   }
@@ -104,6 +104,10 @@ resource "kubernetes_ingress_v1" "nginx" {
         }
       }
     }
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   depends_on = [helm_release.nginx]

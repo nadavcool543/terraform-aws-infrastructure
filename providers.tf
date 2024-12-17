@@ -2,10 +2,9 @@ terraform {
   backend "s3" {
     bucket         = "nadav-terraform-state-bucket01"
     key            = "devops/terraform.tfstate"
-    region         = var.aws_region
+    region         = "us-east-1"
     dynamodb_table = "state-locking"
     encrypt        = true
-    role_arn       = var.terraform_role_arn
   }
 
   required_providers {
@@ -29,18 +28,18 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = "us-east-1"
   
   assume_role {
-    role_arn = var.terraform_role_arn
+    role_arn = "arn:aws:iam::767397741479:role/TerraformRole"
   }
 }
 
 provider "aws" {
   alias  = "dns"
-  region = var.aws_region
+  region = "us-east-1"
   assume_role {
-    role_arn = "arn:aws:iam::${var.dns_account_id}:role/${var.route53_role_name}"
+    role_arn = "arn:aws:iam::992382390584:role/TerraformRoute53Role"
   }
 }
 
@@ -52,10 +51,7 @@ provider "helm" {
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", aws_eks_cluster.main.name, "--role-arn", var.terraform_role_arn]
-      env = {
-        AWS_ROLE_ARN = var.terraform_role_arn
-      }
+      args        = ["eks", "get-token", "--cluster-name", aws_eks_cluster.main.name, "--role-arn", "arn:aws:iam::767397741479:role/TerraformRole"]
     }
   }
 }
@@ -66,6 +62,6 @@ provider "kubernetes" {
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", aws_eks_cluster.main.name, "--role-arn", var.terraform_role_arn]
+    args        = ["eks", "get-token", "--cluster-name", aws_eks_cluster.main.name, "--role-arn", "arn:aws:iam::767397741479:role/TerraformRole"]
   }
 }

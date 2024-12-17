@@ -1,9 +1,9 @@
 # DynamoDB Table
 resource "aws_dynamodb_table" "main" {
-  name           = "${var.project_name}-dynamodb"
+  name           = "terraform-drills-dynamodb"
   billing_mode   = "PROVISIONED"
-  read_capacity  = var.dynamodb_read_capacity
-  write_capacity = var.dynamodb_write_capacity
+  read_capacity  = 5
+  write_capacity = 5
   hash_key       = "ID"
 
   attribute {
@@ -15,10 +15,9 @@ resource "aws_dynamodb_table" "main" {
     enabled = true
   }
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "Main DynamoDB Table"
-    }
-  )
+  tags = {
+    Name        = "Main DynamoDB Table"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }

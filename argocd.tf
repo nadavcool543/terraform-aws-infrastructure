@@ -3,8 +3,8 @@ resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
-  version          = var.argocd_helm_version
-  namespace        = var.argocd_namespace
+  version          = "5.46.7"
+  namespace        = "argocd"
   create_namespace = true
 
   # Basic ArgoCD configuration
@@ -16,7 +16,7 @@ resource "helm_release" "argocd" {
   # Add identification tags
   set {
     name  = "global.labels.Environment"
-    value = var.environment
+    value = "Dev"
   }
 
   depends_on = [aws_eks_cluster.main, aws_eks_node_group.main]

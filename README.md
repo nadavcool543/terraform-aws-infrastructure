@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AWS Infrastructure as Code with Terraform
 
 This repository contains Terraform configurations for deploying a complete AWS infrastructure including EKS, ArgoCD, ALB, and supporting services.
@@ -92,3 +93,53 @@ Route53 → ALB → NGINX Controller → ArgoCD
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+=======
+# AWS Infrastructure as Code with Terraform
+
+This repository contains Terraform configurations for deploying a complete AWS infrastructure including EKS, ArgoCD, ALB, and supporting services.
+
+## Infrastructure Components
+
+- **VPC & Networking**
+  - Custom VPC with public/private subnets
+  - Internet Gateway and NAT Gateway
+  - Route tables and security groups
+
+- **Kubernetes (EKS)**
+  - Managed EKS cluster
+  - Node groups with autoscaling
+  - NGINX Ingress Controller
+  - ArgoCD deployment
+
+- **Load Balancing & DNS**
+  - Application Load Balancer (ALB)
+  - Route53 DNS management
+  - ACM certificate integration
+
+- **Additional Services**
+  - S3 bucket with CloudFront distribution
+  - DynamoDB tables
+  - Lambda functions
+  - RDS database
+  - Auto Scaling Groups
+
+## Prerequisites
+
+1. AWS CLI installed and configured
+2. Terraform (version ~> 1.0)
+3. kubectl
+4. AWS IAM permissions for:
+   - EKS
+   - EC2
+   - VPC
+   - Route53
+   - IAM
+   - S3
+   - DynamoDB
+   - Lambda
+   - RDS
+
+## Quick Start
+
+1. Clone the repository: 
+>>>>>>> 17a0405 (new v)

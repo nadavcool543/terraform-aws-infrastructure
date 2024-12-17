@@ -7,17 +7,17 @@ locals {
   
 
   public_subnets = {
-    for i, az in local.azs : az => cidrsubnet(var.vpc_cidr, 8, i + 1)
+    for i, az in local.azs : az => cidrsubnet("10.0.0.0/16", 8, i + 1)
   }
   
   private_subnets = {
-    for i, az in local.azs : az => cidrsubnet(var.vpc_cidr, 8, i + 10)
+    for i, az in local.azs : az => cidrsubnet("10.0.0.0/16", 8, i + 10)
   }
 }
 
 
 resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
+  cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
 

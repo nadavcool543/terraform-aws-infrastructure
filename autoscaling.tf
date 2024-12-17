@@ -2,7 +2,7 @@
 resource "aws_launch_template" "main" {
   name_prefix   = "terraform-template"
   image_id      = data.aws_ami.amazon_linux_2023.id
-  instance_type = var.asg_instance_type
+  instance_type = "t2.micro"
 
   network_interfaces {
     associate_public_ip_address = true
@@ -19,20 +19,19 @@ resource "aws_launch_template" "main" {
               EOF
   )
 
-  tags = merge(
-    var.common_tags,
-    {
-      Name = "${var.project_name} Launch Template"
-    }
-  )
+  tags = {
+    Name        = "Launch Template"
+    Environment = "Dev"
+    Project     = "Terraform Drills"
+  }
 }
 
 # Auto Scaling Group
 resource "aws_autoscaling_group" "main" {
-  name                = "${var.project_name}-asg"
-  desired_capacity    = var.asg_desired_capacity
-  max_size            = var.asg_max_size
-  min_size            = var.asg_min_size
+  name                = "terraform-drills-asg"
+  desired_capacity    = 2
+  max_size            = 3
+  min_size            = 1
   target_group_arns  = [aws_lb_target_group.main.arn]
   vpc_zone_identifier = values(aws_subnet.public)[*].id
 
@@ -43,7 +42,7 @@ resource "aws_autoscaling_group" "main" {
 
   tag {
     key                 = "Name"
-    value               = "${var.project_name} ASG Instance"
+    value               = "terraform-drills-asg"
     propagate_at_launch = true
   }
 
@@ -56,32 +55,31 @@ resource "aws_autoscaling_group" "main" {
 
 # Scale Up Policy
 resource "aws_autoscaling_policy" "scale_up" {
-  name                   = "${var.project_name}-scale-up"
-  scaling_adjustment     = var.scale_up_adjustment
+  name                   = "terraform-drills-scale-up"
+  scaling_adjustment     = 1
   adjustment_type        = "ChangeInCapacity"
-  cooldown              = var.asg_cooldown
+  cooldown              = 300
   autoscaling_group_name = aws_autoscaling_group.main.name
 }
 
 # Scale Down Policy
 resource "aws_autoscaling_policy" "scale_down" {
-  name                   = "${var.project_name}-scale-down"
-  scaling_adjustment     = var.scale_down_adjustment
-  adjustment_type        = "ChangeInCapacity"
-  cooldown              = var.asg_cooldown
+  name                   = "terraform-drills-scale-down"
+  scaling_adjustment     = -1
+  cooldown              = 300
   autoscaling_group_name = aws_autoscaling_group.main.name
 }
 
 # CloudWatch Alarm for High CPU
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {
-  alarm_name          = "${var.project_name}-high-cpu"
+  alarm_name          = "terraform-drills-high-cpu"
   comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = var.alarm_evaluation_periods
+  evaluation_periods  = 2
   metric_name         = "CPUUtilization"
   namespace           = "AWS/EC2"
-  period              = var.alarm_period
+  period              = 120
   statistic          = "Average"
-  threshold          = var.cpu_high_threshold
+  threshold          = 80
   alarm_description  = "Scale up if CPU > 80%"
   alarm_actions      = [aws_autoscaling_policy.scale_up.arn]
 
@@ -92,14 +90,14 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
 
 # CloudWatch Alarm for Low CPU
 resource "aws_cloudwatch_metric_alarm" "low_cpu" {
-  alarm_name          = "${var.project_name}-low-cpu"
+  alarm_name          = "terraform-drills-low-cpu"
   comparison_operator = "LessThanThreshold"
-  evaluation_periods  = var.alarm_evaluation_periods
+  evaluation_periods  = 2
   metric_name         = "CPUUtilization"
   namespace           = "AWS/EC2"
-  period              = var.alarm_period
+  period              = 120
   statistic          = "Average"
-  threshold          = var.cpu_low_threshold
+  threshold          = 20
   alarm_description  = "Scale down if CPU < 20%"
   alarm_actions      = [aws_autoscaling_policy.scale_down.arn]
 
