@@ -16,21 +16,35 @@ resource "helm_release" "aws_load_balancer_controller" {
   }
 
   set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/identity-provider-config"
+    value = "terraform-eks-oidc"
+  }
+
+  set {
     name  = "serviceAccount.name"
     value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "controller.cleanup.enabled"
+    value = "true"
   }
 
   wait = true
   wait_for_jobs = true
   timeout = 300
 
-  depends_on = [aws_eks_cluster.main, aws_eks_node_group.main]
+  depends_on = [
+    aws_eks_cluster.main,
+    aws_eks_node_group.main
+  ]
+
 }
 
 # Wait for ALB controller to be ready
 resource "time_sleep" "wait_for_alb_controller" {
   depends_on = [helm_release.aws_load_balancer_controller]
-  create_duration = "90s"
+  create_duration = "180s"
 }
 
 # NGINX Helm Release
@@ -65,7 +79,17 @@ resource "helm_release" "nginx" {
     value = "false"
   }
 
-  depends_on = [helm_release.aws_load_balancer_controller]
+  depends_on = [
+    helm_release.aws_load_balancer_controller,
+    time_sleep.wait_for_alb_controller,
+    aws_eks_cluster.main,
+    aws_eks_node_group.main
+  ]
+
+  lifecycle {
+    prevent_destroy = false
+    ignore_changes = all
+  }
 }
 
 
@@ -106,9 +130,22 @@ resource "kubernetes_ingress_v1" "nginx" {
     }
   }
 
-  lifecycle {
-    create_before_destroy = true
-  }
+  depends_on = [
+    helm_release.nginx,
+    time_sleep.wait_for_alb_controller,
+    aws_eks_cluster.main,
+    aws_eks_node_group.main
+  ]
+}
 
-  depends_on = [helm_release.nginx]
+# Add this to your nginx.tf
+resource "null_resource" "remove_ingress_finalizer" {
+  depends_on = [kubernetes_ingress_v1.nginx]
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<-EOF
+      kubectl patch ingress nginx-ingress -n nginx -p '{"metadata":{"finalizers":[]}}' --type=merge
+    EOF
+  }
 } 

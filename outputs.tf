@@ -11,5 +11,5 @@ output "argocd_server_load_balancer" {
 
 output "eks_connect" {
   description = "Command to configure kubectl"
-  value       = "aws eks --region us-east-1 update-kubeconfig --name main-eks-cluster --role-arn arn:aws:iam::767397741479:role/TerraformRole"
+  value       = "aws eks --region us-east-1 update-kubeconfig --name terraform-eks-cluster --role-arn arn:aws:iam::767397741479:role/TerraformRole"
 } 

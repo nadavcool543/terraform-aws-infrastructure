@@ -19,5 +19,13 @@ resource "helm_release" "argocd" {
     value = "Dev"
   }
 
-  depends_on = [aws_eks_cluster.main, aws_eks_node_group.main]
+  depends_on = [
+    aws_eks_cluster.main,
+    aws_eks_node_group.main,
+  ]
+
+  lifecycle {
+    prevent_destroy = false
+    ignore_changes = all
+  }
 } 
