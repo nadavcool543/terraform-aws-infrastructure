@@ -47,20 +47,14 @@ resource "aws_eks_cluster" "main" {
   }
 }
 
-# Get thumbprint for OIDC
 data "tls_certificate" "eks" {
   url = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
 
-# Configure OIDC Identity Provider
-resource "aws_eks_identity_provider_config" "main" {
-  cluster_name = aws_eks_cluster.main.name
-
-  oidc {
-    client_id                     = "sts.amazonaws.com"
-    identity_provider_config_name = "terraform-eks-oidc"
-    issuer_url                    = aws_eks_cluster.main.identity[0].oidc[0].issuer
-  }
+resource "aws_iam_openid_connect_provider" "eks" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
+  url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
 
 # Wait for EKS cluster to be ready
@@ -68,4 +62,3 @@ resource "time_sleep" "wait_for_eks" {
   depends_on = [aws_eks_cluster.main]
   create_duration = "30s"
 }
-  

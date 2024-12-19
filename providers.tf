@@ -29,10 +29,10 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
-  
   assume_role {
     role_arn = "arn:aws:iam::767397741479:role/TerraformRole"
   }
+
 }
 
 provider "aws" {
@@ -47,7 +47,7 @@ provider "helm" {
   kubernetes {
     host                   = aws_eks_cluster.main.endpoint
     cluster_ca_certificate = base64decode(aws_eks_cluster.main.certificate_authority[0].data)
-    
+
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"

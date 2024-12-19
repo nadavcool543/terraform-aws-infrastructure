@@ -11,18 +11,28 @@ resource "helm_release" "aws_load_balancer_controller" {
   }
 
   set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = "arn:aws:iam::767397741479:role/TerraformRole"
+    name  = "vpcId"
+    value = aws_vpc.main.id
   }
 
   set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/identity-provider-config"
-    value = "terraform-eks-oidc"
+    name  = "region"
+    value = "us-east-1"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.alb_controller.arn
   }
 
   set {
     name  = "serviceAccount.name"
     value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
   }
 
   set {
@@ -45,6 +55,40 @@ resource "helm_release" "aws_load_balancer_controller" {
 resource "time_sleep" "wait_for_alb_controller" {
   depends_on = [helm_release.aws_load_balancer_controller]
   create_duration = "180s"
+}
+
+# Create IAM role for ALB controller
+resource "aws_iam_role" "alb_controller" {
+  name = "AWSLoadBalancerControllerRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud": "sts.amazonaws.com"
+        }
+      }
+    }]
+  })
+}
+
+# Attach admin policy to ALB controller role
+resource "aws_iam_role_policy_attachment" "alb_controller" {
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+  role       = aws_iam_role.alb_controller.name
+}
+
+# Attach policies to ALB controller role
+resource "aws_iam_role_policy_attachment" "alb_controller_cni" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  role       = aws_iam_role.alb_controller.name
 }
 
 # NGINX Helm Release

@@ -3,7 +3,7 @@ resource "kubernetes_ingress_v1" "argocd" {
     name      = "argocd-ingress"
     namespace = "argocd"
     annotations = {
-      "kubernetes.io/ingress.class"               = "nginx"
+      "kubernetes.io/ingress.class"                  = "nginx"
       "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
       "nginx.ingress.kubernetes.io/ssl-passthrough"  = "true"
       "nginx.ingress.kubernetes.io/ssl-redirect"     = "true"
@@ -15,7 +15,7 @@ resource "kubernetes_ingress_v1" "argocd" {
     rule {
       http {
         path {
-          path = "/"
+          path      = "/"
           path_type = "Prefix"
           backend {
             service {
