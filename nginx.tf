@@ -1,96 +1,3 @@
-# AWS Load Balancer Controller
-resource "helm_release" "aws_load_balancer_controller" {
-  name       = "aws-load-balancer-controller"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-
-  set {
-    name  = "clusterName"
-    value = aws_eks_cluster.main.name
-  }
-
-  set {
-    name  = "vpcId"
-    value = aws_vpc.main.id
-  }
-
-  set {
-    name  = "region"
-    value = "us-east-1"
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.alb_controller.arn
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = "true"
-  }
-
-  set {
-    name  = "controller.cleanup.enabled"
-    value = "true"
-  }
-
-  wait = true
-  wait_for_jobs = true
-  timeout = 300
-
-  depends_on = [
-    aws_eks_cluster.main,
-    aws_eks_node_group.main
-  ]
-
-}
-
-# Wait for ALB controller to be ready
-resource "time_sleep" "wait_for_alb_controller" {
-  depends_on = [helm_release.aws_load_balancer_controller]
-  create_duration = "180s"
-}
-
-# Create IAM role for ALB controller
-resource "aws_iam_role" "alb_controller" {
-  name = "AWSLoadBalancerControllerRole"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Federated = aws_iam_openid_connect_provider.eks.arn
-      }
-      Action = "sts:AssumeRoleWithWebIdentity"
-      Condition = {
-        StringEquals = {
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud": "sts.amazonaws.com"
-        }
-      }
-    }]
-  })
-}
-
-# Attach admin policy to ALB controller role
-resource "aws_iam_role_policy_attachment" "alb_controller" {
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-  role       = aws_iam_role.alb_controller.name
-}
-
-# Attach policies to ALB controller role
-resource "aws_iam_role_policy_attachment" "alb_controller_cni" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.alb_controller.name
-}
-
 # NGINX Helm Release
 resource "helm_release" "nginx" {
   name             = "nginx"
@@ -124,8 +31,6 @@ resource "helm_release" "nginx" {
   }
 
   depends_on = [
-    helm_release.aws_load_balancer_controller,
-    time_sleep.wait_for_alb_controller,
     aws_eks_cluster.main,
     aws_eks_node_group.main
   ]
@@ -136,6 +41,19 @@ resource "helm_release" "nginx" {
   }
 }
 
+# Cleanup existing ingress before creating new one
+resource "null_resource" "cleanup_ingress" {
+  triggers = {
+    nginx_namespace = helm_release.nginx.namespace
+  }
+
+}
+
+# Wait for ALB controller to be ready
+resource "time_sleep" "wait_for_alb_controller" {
+  depends_on = [module.eks_blueprints_addons.aws_load_balancer_controller]
+  create_duration = "180s"
+}
 
 # ALB Ingress
 resource "kubernetes_ingress_v1" "nginx" {
@@ -152,6 +70,7 @@ resource "kubernetes_ingress_v1" "nginx" {
       "alb.ingress.kubernetes.io/listen-ports"     = "[{\"HTTP\": 80}, {\"HTTPS\": 443}]"
       "alb.ingress.kubernetes.io/certificate-arn"  = "arn:aws:acm:us-east-1:767397741479:certificate/0654c958-3fbc-4214-b355-bb8cba5db57c"
       "alb.ingress.kubernetes.io/ssl-redirect"     = "443"
+      "alb.ingress.kubernetes.io/group.name"       = "nginx"
     }
   }
 
@@ -176,10 +95,20 @@ resource "kubernetes_ingress_v1" "nginx" {
 
   depends_on = [
     helm_release.nginx,
-    time_sleep.wait_for_alb_controller,
     aws_eks_cluster.main,
-    aws_eks_node_group.main
+    aws_eks_node_group.main,
+    null_resource.cleanup_ingress,
+    time_sleep.wait_for_alb_controller,
+    module.eks_blueprints_addons.aws_load_balancer_controller
   ]
+
+  lifecycle {
+    replace_triggered_by = [
+      helm_release.nginx,
+      aws_eks_cluster.main,
+      aws_eks_node_group.main
+    ]
+  }
 }
 
 # Add this to your nginx.tf

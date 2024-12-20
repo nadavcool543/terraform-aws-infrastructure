@@ -35,14 +35,6 @@ provider "aws" {
 
 }
 
-provider "aws" {
-  alias  = "dns"
-  region = "us-east-1"
-  assume_role {
-    role_arn = "arn:aws:iam::992382390584:role/TerraformRoute53Role"
-  }
-}
-
 provider "helm" {
   kubernetes {
     host                   = aws_eks_cluster.main.endpoint
