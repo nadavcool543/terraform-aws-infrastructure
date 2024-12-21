@@ -1,3 +1,6 @@
+# Get current AWS account ID
+data "aws_caller_identity" "current" {}
+
 module "eks_blueprints_addons" {
   source  = "aws-ia/eks-blueprints-addons/aws"
   version = "1.19.0"
@@ -19,6 +22,26 @@ module "eks_blueprints_addons" {
         name  = "region"
         value = "us-east-1"
       }
+    ]
+  }
+
+  # Enable NGINX Ingress Controller
+  enable_ingress_nginx = true
+  ingress_nginx = {
+    namespace = "nginx"
+    create_namespace = true
+    values = [<<-EOT
+      controller:
+        service:
+          type: NodePort
+          annotations:
+            service.beta.kubernetes.io/aws-load-balancer-ssl-cert: ""
+            service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+        config:
+          use-forwarded-headers: "true"
+          compute-full-forwarded-for: "true"
+          ssl-redirect: "false"
+    EOT
     ]
   }
 
@@ -55,6 +78,35 @@ module "eks_blueprints_addons" {
   external_secrets_secrets_manager_arns = ["arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:*"]
   external_secrets_ssm_parameter_arns   = ["arn:aws:ssm:us-east-1:${data.aws_caller_identity.current.account_id}:parameter/*"]
 
+  # Enable ArgoCD
+  enable_argocd = true
+  argocd = {
+    namespace = "argo-cd"
+    chart_version = "5.46.7"
+    set = [
+      {
+        name  = "server.service.type"
+        value = "ClusterIP"
+      },
+      {
+        name  = "server.ingress.enabled"
+        value = "false"
+      },
+      {
+        name  = "server.extraArgs[0]"
+        value = "--insecure"
+      },
+      {
+        name  = "server.extraArgs[1]"
+        value = "--disable-auth"
+      },
+      {
+        name  = "server.certificate.enabled"
+        value = "false"
+      }
+    ]
+  }
+
   # Tags
   tags = {
     Environment = "Dev"
@@ -66,6 +118,3 @@ module "eks_blueprints_addons" {
     aws_eks_node_group.main
   ]
 }
-
-# Get current AWS account ID
-data "aws_caller_identity" "current" {}

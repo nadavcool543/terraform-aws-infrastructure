@@ -11,3 +11,9 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
+variable "domain_name" {
+  description = "Domain name for Route53 records"
+  type        = string
+  default     = "nshohat.online"
+}
+
